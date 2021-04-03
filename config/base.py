@@ -35,7 +35,7 @@ CLASS_MAP = {
 # replacemap
 # Classes to be replaced with different ones at resource rendering time
 REPLACE_MAP = {
-#    "Reference": "FHIRReference"  # `FHIRReference` adds differencing capabilities
+    #    "Reference": "FHIRReference"  # `FHIRReference` adds differencing capabilities
 }
 # natives
 # Which class names are native to the language (or can be treated this way)
@@ -43,12 +43,7 @@ NATIVES = ["bool", "int", "float", "str", "dict"]
 
 # jsonmap
 # Which classes are to be expected from JSON decoding
-JSON_MAP = {
-    "str": "str",
-    "int": "int",
-    "bool": "bool",
-    "float": "float"
-}
+JSON_MAP = {"str": "str", "int": "int", "bool": "bool", "float": "float"}
 # jsonmap_default
 JSON_MAP_DEFAULT = "dict"
 
@@ -76,7 +71,7 @@ ENUM_NAME_MAP = {
     "http://hl7.org/fhir/resource-type-link": "ResourceTypeLink",
 }
 # base_url
-FHIR_BASE_URL = "http://hl7.org/fhir"
+FHIR_BASE_URL = "http://build.fhir.org"
 
 # CURRENT_VERSION
 CURRENT_RELEASE_NAME = "R4"
@@ -84,7 +79,7 @@ CURRENT_RELEASE_NAME = "R4"
 PREVIOUS_RELEASES = {"STU3"}
 
 # specification_url
-SPECIFICATION_URL = "/".join([FHIR_BASE_URL, CURRENT_RELEASE_NAME])
+SPECIFICATION_URL = "/".join([FHIR_BASE_URL])
 
 # tpl_base
 # In which directory to find the templates.
@@ -236,7 +231,11 @@ MANUAL_PROFILES = [
         ["FHIRResourceModel"],
     ),
     ("templates/fhirabstractmodel.py", "fhirabstractmodel", ["FHIRAbstractModel"]),
-    ("templates/fhirprimitiveextension.py", "fhirprimitiveextension", ["FHIRPrimitiveExtension"]),
+    (
+        "templates/fhirprimitiveextension.py",
+        "fhirprimitiveextension",
+        ["FHIRPrimitiveExtension"],
+    ),
     ("templates/fhirtypes.py", "fhirtypes", FHIR_PRIMITIVES),
 ]
 RESOURCES_WRITER_CLASS = "utils.ResourceWriter"
