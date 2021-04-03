@@ -7,7 +7,7 @@ If you've come here because you want _Swift_ or _Python_ classes for FHIR data m
 - [Swift-FHIR][] and [Swift-SMART][]
 - Python [client-py][]
 
-The `master` branch is currently capable of parsing _STU 3, v3.0.0_.  
+The `master` branch is currently capable of parsing _STU 3, v3.0.0_.
 The `develop` branch should be capable of parsing the continuous integration build and will be merged into master on new major FHIR releases.
 There may be tags for specific freezes, see [releases](https://github.com/smart-on-fhir/fhir-parser/releases).
 

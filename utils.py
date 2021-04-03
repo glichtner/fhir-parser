@@ -5,7 +5,8 @@ import fhirrenderer
 
 __author__ = "Md Nazrul Islam <email2nazrul@gmail.com>"
 
-INIT_TPL = """
+INIT_TPL = (
+    """
 # -*- coding: utf-8 -*-
 from pathlib import Path
 from typing import Any, Dict, Union
@@ -19,7 +20,8 @@ __fhir_version__ = "{0}"
 def construct_fhir_element(
     element_type: str, data: Union[Dict[str, Any], str, bytes, Path]
 ) -> FHIRAbstractModel:
-    """ """
+    """
+    """
     try:
         klass = get_fhir_model_class(element_type)
     except KeyError:
@@ -35,13 +37,12 @@ def construct_fhir_element(
 
 __all__ = ["get_fhir_model_class", "construct_fhir_element"]
 """
+)
 
 
 def ensure_init_py(settings, version_info):
     """ """
-    init_tpl = INIT_TPL.format(
-        version_info.version
-    )
+    init_tpl = INIT_TPL.format(version_info.version)
 
     for file_location in [
         settings.RESOURCE_TARGET_DIRECTORY,
@@ -131,8 +132,7 @@ def get_cached_version_info(spec_source):
 
 class ResourceWriter(FHIRSpecWriter):
     def write(self):
-        """
-        """
+        """"""
         if self.settings.WRITE_RESOURCES:
             renderer = fhirrenderer.FHIRStructureDefinitionRenderer(
                 self.spec, self.settings
