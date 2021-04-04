@@ -74,7 +74,7 @@ ENUM_NAME_MAP = {
 FHIR_BASE_URL = "http://build.fhir.org"
 
 # CURRENT_VERSION
-CURRENT_RELEASE_NAME = "R4"
+CURRENT_RELEASE_NAME = "R5"
 # PREVIOUS_VERSIONS
 PREVIOUS_RELEASES = {"STU3"}
 
@@ -90,9 +90,13 @@ TEMPLATE_DIRECTORY = "templates"
 # Whether and where to put the generated class models
 WRITE_RESOURCES = True
 
+# output base directory
+# target base directory where all files will be written to
+OUTPUT_BASE_DIRECTORY = "./generated/fhir"
+
 # tpl_resource_target
-# target directory to write the generated class files to
-RESOURCE_TARGET_DIRECTORY = "../fhir/resources"
+# target directory to write the generated class files to (relative to OUTPUT_BASE_DIRECTORY)
+RESOURCE_TARGET_DIRECTORY = OUTPUT_BASE_DIRECTORY + "/resources"
 
 # tpl_resource_target_ptrn
 # target class file name pattern, with one placeholder (`{}`) for the class name
@@ -120,8 +124,8 @@ WRITE_FACTORY = True
 FACTORY_SOURCE_TEMPLATE = "template-elementfactory.jinja2"
 
 # tpl_factory_target
-# where to write the generated factory to
-FACTORY_TARGET_NAME = "../tmp/fhir/resources/fhirelementfactory.py"
+# where to write the generated factory to (relative to OUTPUT_BASE_DIRECTORY)
+FACTORY_TARGET_NAME = OUTPUT_BASE_DIRECTORY + "/resources/fhirelementfactory.py"
 
 # write_dependencies
 WRITE_DEPENDENCIES = False
@@ -143,8 +147,8 @@ WRITE_UNITTESTS = True
 UNITTEST_SOURCE_TEMPLATE = "template-unittest.jinja2"
 
 # tpl_unittest_target
-# target directory to write the generated unit test files to
-UNITTEST_TARGET_DIRECTORY = "../tmp/fhir/resources/tests"
+# target directory to write the generated unit test files to (relative to OUTPUT_BASE_DIRECTORY)
+UNITTEST_TARGET_DIRECTORY = OUTPUT_BASE_DIRECTORY + "/../tests"
 
 # tpl_unittest_target_ptrn
 # target file name pattern for unit tests; the one placeholder (`{}`)
@@ -205,6 +209,7 @@ FHIR_PRIMITIVES = [
     "id",
     "decimal",
     "integer",
+    "integer64",
     "unsignedInt",
     "positiveInt",
     "uri",

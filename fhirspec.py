@@ -192,6 +192,7 @@ class Configuration:
             "DEPENDENCIES_TARGET_FILE_NAME",
             "UNITTEST_TARGET_DIRECTORY",
             "UNITTEST_COPY_FILES",
+            "OUTPUT_BASE_DIRECTORY",
         ]
         if path_variables is not None:
             paths.extend(path_variables)

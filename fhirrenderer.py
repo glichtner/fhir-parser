@@ -64,9 +64,9 @@ class FHIRRenderer(object):
     def __init__(self, spec, settings):
         self.spec = spec
         self.settings = settings
-        self.jinjaenv = Environment(
+        self.jinjaenv = Environment(  # nosec
             loader=PackageLoader("generate", self.settings.TEMPLATE_DIRECTORY),
-            autoescape=True,
+            autoescape=False,
         )
         self.jinjaenv.filters["string_wrap"] = string_wrap
         self.jinjaenv.filters["unique_func_name"] = unique_func_name
