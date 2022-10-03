@@ -3,10 +3,7 @@
 import abc
 import inspect
 import logging
-import pathlib
 import typing
-from collections import OrderedDict
-from enum import Enum
 from functools import lru_cache
 
 from pydantic import BaseModel, Extra, Field
@@ -63,6 +60,46 @@ logger = logging.getLogger(__name__)
 FHIR_COMMENTS_FIELD_NAME = "fhir_comments"
 
 
+def fallback_type_method():
+    """lambda like function, is used as fallback of ``is_primitive``
+    method for non FHIR Type class"""
+    return True
+
+
+def filter_empty_list_dict(items):
+    """A special helper function, which is removing
+    any item which contains empty list/dict value.
+    It is used by ``FHIRAbstractModel::json``"""
+    if not isinstance(items, (list, dict)):
+        return items
+
+    if len(items) == 0:
+        return None
+
+    if isinstance(items, list):
+        for idx, item in enumerate(items):
+            if item is None:
+                # may be ``exclude_none`` False
+                continue
+            result = filter_empty_list_dict(item)
+            if result is None:
+                del items[idx]
+    else:
+        for key in tuple(items.keys()):
+            item = items[key]
+            if item is None:
+                # may be ``exclude_none`` False
+                continue
+            result = filter_empty_list_dict(item)
+            if result is None:
+                del items[key]
+
+    if len(items) == 0:
+        return None
+
+    return items
+
+
 class WrongResourceType(PydanticValueError):
     code = "wrong.resource_type"
     msg_template = "Wrong ResourceType: {error}"
@@ -113,7 +150,7 @@ class FHIRAbstractModel(BaseModel, abc.ABC):
     @classmethod
     def add_root_validator(
         cls: typing.Type["Model"],
-        validator: typing.Union["AnyCallable", classmethod],
+        validator: typing.Union[AnyCallable, classmethod],
         *,
         pre: bool = False,
         skip_on_failure: bool = False,
@@ -187,13 +224,6 @@ class FHIRAbstractModel(BaseModel, abc.ABC):
                 yield model_field
 
     @classmethod
-    def elements_sequence(cls):
-        """returning all elements names from ``Resource`` according specification,
-        with preserving original sequence order.
-        """
-        return []
-
-    @classmethod
     @lru_cache(maxsize=1024, typed=True)
     def has_resource_base(cls: typing.Type["Model"]) -> bool:
         """ """
@@ -208,17 +238,6 @@ class FHIRAbstractModel(BaseModel, abc.ABC):
     def get_resource_type(cls: typing.Type["Model"]) -> str:
         """ """
         return cls.__fields__["resource_type"].default
-
-    @classmethod
-    @lru_cache(maxsize=None, typed=True)
-    def get_alias_mapping(
-        cls: typing.Type["FHIRAbstractModel"],
-    ) -> typing.Dict[str, str]:
-        """Mappings between field's name and alias"""
-        aliases = cls.elements_sequence()
-        return {
-            f.alias: fname for fname, f in cls.__fields__.items() if f.alias in aliases
-        }
 
     @classmethod
     def get_json_encoder(cls) -> typing.Callable[[typing.Any], typing.Any]:
@@ -277,62 +296,89 @@ class FHIRAbstractModel(BaseModel, abc.ABC):
     def yaml(  # type: ignore
         self,
         *,
+        include: typing.Union["AbstractSetIntStr", "MappingIntStrAny"] = None,
+        exclude: typing.Union["AbstractSetIntStr", "MappingIntStrAny"] = None,
         by_alias: bool = None,
+        skip_defaults: bool = None,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
         exclude_none: bool = None,
-        exclude_comments: bool = False,
-        return_bytes: bool = False,
-        **dumps_kwargs: typing.Any,
-    ) -> typing.Union[str, bytes]:
-        """Fully overridden method but codes are copied from BaseMode and business logic added
-        in according to support ``fhir_comments``filter and other FHIR specific requirments.
-        """
+    ) -> "DictStrAny":
+        """ """
+        # xxx: do validation? if object changed
         if by_alias is None:
             by_alias = True
 
         if exclude_none is None:
             exclude_none = True
 
-        data = self.dict(
+        if exclude is None:
+            exclude = {"resource_type"}
+        elif isinstance(exclude, set):
+            exclude.add("resource_type")
+        elif isinstance(exclude, dict):
+            if "resource_type" not in exclude:
+                exclude["resource_type"] = ...
+
+        exclude_comments = False
+
+        if FHIR_COMMENTS_FIELD_NAME in exclude:
+            exclude_comments = True
+
+        if exclude_comments:
+            children_excludes: typing.Dict[
+                str, typing.Union[typing.Set[str], typing.Dict[str, typing.Any]]
+            ] = dict()
+            for field in self.__fields__.values():
+                if getattr(field.type_, "is_primitive", fallback_type_method)():
+                    # no treatment for Primitive Type
+                    continue
+                if field.outer_type_ != field.type_ and str(
+                    field.outer_type_
+                ).startswith("typing.List["):
+
+                    children_excludes[field.name] = {
+                        "__all__": {FHIR_COMMENTS_FIELD_NAME}
+                    }
+                else:
+                    children_excludes[field.name] = {FHIR_COMMENTS_FIELD_NAME}
+
+            if len(children_excludes) > 0:
+                if isinstance(exclude, set):
+                    exclude = {e: ... for e in exclude}
+                if typing.TYPE_CHECKING:
+                    exclude = typing.cast(typing.Dict, exclude)
+                exclude.update(children_excludes)
+
+            if FHIR_COMMENTS_FIELD_NAME not in exclude:
+                if isinstance(exclude, set):
+                    exclude.add(FHIR_COMMENTS_FIELD_NAME)
+                elif isinstance(exclude, dict):
+                    exclude[FHIR_COMMENTS_FIELD_NAME] = ...
+
+        result = BaseModel.dict(
+            self,
+            include=include,
+            exclude=exclude,
             by_alias=by_alias,
+            skip_defaults=skip_defaults,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
-            exclude_comments=exclude_comments,
         )
-        if self.__custom_root_type__:
-            data = data[ROOT_KEY]
+        if self.__class__.has_resource_base():
+            result["resourceType"] = self.resource_type
 
-        if typing.TYPE_CHECKING:
-            result: typing.Union[str, bytes]
-
-        result = yaml_dumps(data, return_bytes=return_bytes, **dumps_kwargs)
         return result
-
-    def xml(  # type: ignore
-        self,
-        *,
-        exclude_comments: bool = False,
-        pretty_print=False,
-        xml_declaration=True,
-        return_bytes: bool = False,
-        **dumps_kwargs: typing.Any,
-    ) -> typing.Union[str, bytes]:
-        """ """
-        params = {
-            "with_comments": not exclude_comments,
-            "xml_declaration": xml_declaration,
-            "pretty_print": pretty_print,
-        }
-        params.update(dumps_kwargs)
-
-        xml_string = xml_dumps(self, **params)
-        if return_bytes is False:
-            xml_string = xml_string.decode()
-
-        return xml_string
 
     def json(  # type: ignore
         self,
         *,
+        include: typing.Union["AbstractSetIntStr", "MappingIntStrAny"] = None,
+        exclude: typing.Union["AbstractSetIntStr", "MappingIntStrAny"] = None,
         by_alias: bool = None,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
         exclude_none: bool = None,
         exclude_comments: bool = False,
         encoder: typing.Optional[typing.Callable[[typing.Any], typing.Any]] = None,
@@ -347,6 +393,19 @@ class FHIRAbstractModel(BaseModel, abc.ABC):
 
         if exclude_none is None:
             exclude_none = True
+
+        if exclude_comments:
+            if exclude is None:
+                exclude = {FHIR_COMMENTS_FIELD_NAME}
+            elif isinstance(exclude, set):
+                exclude.add(FHIR_COMMENTS_FIELD_NAME)
+            elif isinstance(exclude, dict):
+                exclude[FHIR_COMMENTS_FIELD_NAME] = ...
+            else:
+                raise NotImplementedError(
+                    "Only Set or Dict type ``exclude`` value is accepted "
+                    f"but got type ``{type(exclude)}``"
+                )
 
         if (
             getattr(self.__config__.json_dumps, "__qualname__", "")
@@ -377,12 +436,18 @@ class FHIRAbstractModel(BaseModel, abc.ABC):
             dumps_kwargs["return_bytes"] = return_bytes
 
         data = self.dict(
+            include=include,
+            exclude=exclude,
             by_alias=by_alias,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
-            exclude_comments=exclude_comments,
         )
         if self.__custom_root_type__:
             data = data[ROOT_KEY]
+
+        if exclude_comments:
+            data = filter_empty_list_dict(data)
 
         encoder = typing.cast(
             typing.Callable[[typing.Any], typing.Any], encoder or self.__json_encoder__

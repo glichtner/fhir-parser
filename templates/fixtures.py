@@ -10,11 +10,7 @@ from os.path import dirname
 
 import pytest  # type: ignore
 
-EXAMPLE_RESOURCES_URL = (
-    "https://github.com/nazrulworld/hl7-archives/raw/"
-    "0.2.1/FHIR/{{release}}/"
-    "{{fhir_version}}-examples-json.zip"
-)
+EXAMPLE_RESOURCES_URL = "https://build.fhir.org/examples-json.zip"
 ROOT_PATH = dirname(dirname(dirname(dirname(os.path.abspath(__file__)))))
 CACHE_PATH = os.path.join(ROOT_PATH, ".cache")
 
@@ -40,8 +36,7 @@ def download_and_store(url, path):
 
 
 def expand(self, local):
-    """ Expand the ZIP file at the given path to the cache directory.
-    """
+    """Expand the ZIP file at the given path to the cache directory."""
     path = os.path.join(self.cache, local)
     assert os.path.exists(path)
     import zipfile  # import here as we can bypass its use with a manual unzip
@@ -74,11 +69,8 @@ def base_settings():
     with zipfile.ZipFile(example_data_file_location) as z:
         z.extractall(temp_data_dir)
 
-    zip_dir_name = pathlib.Path(EXAMPLE_RESOURCES_URL).name[:-4]
     if "FHIR_UNITTEST_DATADIR" not in os.environ:
-        os.environ.setdefault(
-            "FHIR_UNITTEST_DATADIR", os.path.join(temp_data_dir, zip_dir_name)
-        )
+        os.environ.setdefault("FHIR_UNITTEST_DATADIR", temp_data_dir)
 
     settings["unittest_data_dir"] = pathlib.Path(os.environ["FHIR_UNITTEST_DATADIR"])
 

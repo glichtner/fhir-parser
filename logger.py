@@ -24,7 +24,7 @@ try:
     logger = logging.getLogger("fhirparser")
     logger.setLevel(log_level)
     logger.addHandler(stream)
-except Exception as e:
+except Exception:
     logging.info('Install "colorlog" to enable colored log messages')
 
 logger = logging.getLogger("fhirparser")

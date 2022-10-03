@@ -20,7 +20,7 @@ from typing import Any, Dict, Union
 from .fhirabstractmodel import FHIRAbstractModel
 from .fhirtypesvalidators import get_fhir_model_class
 
-__fhir_version__ = "{0}"
+__fhir_version__ = "{fhir_version}"
 
 
 def construct_fhir_element(
@@ -32,7 +32,7 @@ def construct_fhir_element(
         klass = get_fhir_model_class(element_type)
     except KeyError:
         raise LookupError(
-            f"'{1}' is not valid FHIRModel (element type) name!"
+            f"'{{element_type}}' is not valid FHIRModel (element type) name!"
         )
     if isinstance(data, (str, bytes)):
         return klass.parse_raw(data, content_type="application/json")
@@ -46,38 +46,42 @@ __all__ = ["get_fhir_model_class", "construct_fhir_element"]
 )
 
 
+def touch_init_py(location):
+    open(location / "__init__.py", "a").close()
+
+
 def ensure_init_py(settings, version_info):
     """ """
     init_tpl = INIT_TPL.format(version_info.version, "element_type")
 
-    for file_location in [
-        settings.RESOURCE_TARGET_DIRECTORY,
-        settings.UNITTEST_TARGET_DIRECTORY,
-    ]:
+    file_location = settings.RESOURCE_TARGET_DIRECTORY
+    if (file_location / "__init__.py").exists():
+        lines = list()
+        has_fhir_version = False
+        with open((file_location / "__init__.py"), "r") as fp:
+            for line in fp:
+                if "__fhir_version__" in line:
+                    has_fhir_version = True
+                    parts = list()
+                    parts.append(line.split("=")[0])
+                    parts.append('"{0}"'.format(version_info.version))
 
-        if (file_location / "__init__.py").exists():
-            lines = list()
-            has_fhir_version = False
-            with open((file_location / "__init__.py"), "r") as fp:
-                for line in fp:
-                    if "__fhir_version__" in line:
-                        has_fhir_version = True
-                        parts = list()
-                        parts.append(line.split("=")[0])
-                        parts.append('"{0}"'.format(version_info.version))
+                    line = "= ".join(parts)
+                lines.append(line.rstrip("\n"))
 
-                        line = "= ".join(parts)
-                    lines.append(line.rstrip("\n"))
+        if not has_fhir_version:
+            lines.append('__fhir_version__ = "{0}"'.format(version_info.version))
 
-            if not has_fhir_version:
-                lines.append('__fhir_version__ = "{0}"'.format(version_info.version))
+        txt = "\n".join(lines)
+    else:
+        txt = init_tpl
 
-            txt = "\n".join(lines)
-        else:
-            txt = init_tpl
+    with open((file_location / "__init__.py"), "w") as fp:
+        fp.write(txt)
 
-        with open((file_location / "__init__.py"), "w") as fp:
-            fp.write(txt)
+    # create empty __init__.py
+    touch_init_py(settings.OUTPUT_BASE_DIRECTORY)
+    touch_init_py(settings.UNITTEST_TARGET_DIRECTORY)
 
 
 def update_pytest_fixture(settings):

@@ -15,7 +15,6 @@ from jinja2.filters import contextfilter
 from markupsafe import Markup
 
 from logger import logger
-import io
 
 
 @contextfilter
@@ -65,8 +64,9 @@ class FHIRRenderer(object):
     def __init__(self, spec, settings):
         self.spec = spec
         self.settings = settings
-        self.jinjaenv = Environment(
-            loader=PackageLoader("generate", self.settings.TEMPLATE_DIRECTORY)
+        self.jinjaenv = Environment(  # nosec
+            loader=PackageLoader("generate", self.settings.TEMPLATE_DIRECTORY),
+            autoescape=False,
         )
         self.jinjaenv.filters["string_wrap"] = string_wrap
         self.jinjaenv.filters["unique_func_name"] = unique_func_name
@@ -84,7 +84,7 @@ class FHIRRenderer(object):
         """
         try:
             template = self.jinjaenv.get_template(template_name)
-        except TemplateNotFound as e:
+        except TemplateNotFound:
             logger.error(
                 'Template "{}" not found in «{}», cannot render'.format(
                     template_name, self.settings.TEMPLATE_DIRECTORY

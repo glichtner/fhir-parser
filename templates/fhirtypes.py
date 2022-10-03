@@ -38,6 +38,7 @@ FHIR_PRIMITIVES = [
     "id",
     "decimal",
     "integer",
+    "integer64",
     "unsignedInt",
     "positiveInt",
     "uri",
@@ -252,6 +253,19 @@ class Decimal(ConstrainedDecimal, Primitive):
 class Integer(ConstrainedInt, Primitive):
     """A signed integer in the range −2,147,483,648..2,147,483,647 (32-bit;
     for larger values, use decimal)"""
+
+    regex = re.compile(r"^[0]|[-+]?[1-9][0-9]*$")
+    __visit_name__ = "integer"
+
+    @classmethod
+    def to_string(cls, value):
+        """ """
+        assert isinstance(value, int)
+        return str(value)
+
+
+class Integer64(ConstrainedInt, Primitive):
+    """A signed integer (64-bit)"""
 
     regex = re.compile(r"^[0]|[-+]?[1-9][0-9]*$")
     __visit_name__ = "integer"

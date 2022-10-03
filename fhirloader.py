@@ -6,7 +6,7 @@ import pathlib
 
 
 class FHIRLoader(object):
-    """ Class to download the files needed for the generator.
+    """Class to download the files needed for the generator.
 
     The `needs` dictionary contains as key the local file needed and how to
     get it from the specification URL.
@@ -25,7 +25,7 @@ class FHIRLoader(object):
         self.cache = cache
 
     def load(self, force_download=False, force_cache=False):
-        """ Makes sure all the files needed have been downloaded.
+        """Makes sure all the files needed have been downloaded.
 
         :returns: The path to the directory with all our files.
         """
@@ -71,7 +71,7 @@ class FHIRLoader(object):
         return self.cache
 
     def download(self, filename):
-        """ Download the given file located on the server.
+        """Download the given file located on the server.
 
         :returns: The local file name in our cache directory the file was
             downloaded to
@@ -84,8 +84,7 @@ class FHIRLoader(object):
 
     @staticmethod
     def expand(filepath: pathlib.Path, target: pathlib.Path):
-        """ Expand the ZIP file at the given path to the cache directory.
-        """
+        """Expand the ZIP file at the given path to the cache directory."""
         assert filepath.exists() and filepath.is_file()
         # import here as we can bypass its use with a manual unzip
         import zipfile
