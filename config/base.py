@@ -71,7 +71,7 @@ ENUM_NAME_MAP = {
     "http://hl7.org/fhir/resource-type-link": "ResourceTypeLink",
 }
 # base_url
-FHIR_BASE_URL = "http://build.fhir.org"
+FHIR_BASE_URL = "https://hl7.org/fhir"
 
 # CURRENT_VERSION
 CURRENT_RELEASE_NAME = "R5"
