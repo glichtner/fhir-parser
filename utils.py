@@ -52,7 +52,7 @@ def touch_init_py(location):
 
 def ensure_init_py(settings, version_info):
     """ """
-    init_tpl = INIT_TPL.format(version_info.version, "element_type")
+    init_tpl = INIT_TPL.format(fhir_version=version_info.version)
 
     file_location = settings.RESOURCE_TARGET_DIRECTORY
     if (file_location / "__init__.py").exists():

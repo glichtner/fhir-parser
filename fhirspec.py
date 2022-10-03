@@ -1542,7 +1542,7 @@ class FHIRElementType:
         if self.code and HTTP_URL.match(self.code):
             if extension is None:
                 raise NotImplementedError
-            self.code = extension["valueUri"]
+            self.code = extension["valueUrl"]
 
         elif self.code is None:
             if extension is None:
@@ -2085,6 +2085,9 @@ class FHIRUnitTest:
                         for ival in val:
                             if ival is None:
                                 continue
+                            if hasattr(ival, '__len__') and len(ival) == 0:
+                                continue
+                            
                             idxpath = self.controller.settings.UNITTEST_FORMAT_PATH_INDEX.format(  # noqa: E501
                                 path, i
                             )
