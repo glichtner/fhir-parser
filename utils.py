@@ -1,6 +1,12 @@
 import configparser
+import logging
+import pathlib
+import typing
 from fhirspec import FHIRSpecWriter
 import fhirrenderer
+import os
+import sys
+from subprocess import check_call, CalledProcessError
 
 
 __author__ = "Md Nazrul Islam <email2nazrul@gmail.com>"
@@ -46,7 +52,7 @@ def touch_init_py(location):
 
 def ensure_init_py(settings, version_info):
     """ """
-    init_tpl = INIT_TPL.format(fhir_version=version_info.version)
+    init_tpl = INIT_TPL.format(version_info.version, "element_type")
 
     file_location = settings.RESOURCE_TARGET_DIRECTORY
     if (file_location / "__init__.py").exists():
@@ -134,9 +140,24 @@ def get_cached_version_info(spec_source):
     return config["FHIR"]["version"], config["FHIR"]["fhirversion"]
 
 
+def parse_path(path_str: str) -> pathlib.Path:
+    """Path normalizer"""
+    if path_str.startswith("~"):
+        return pathlib.Path(os.path.expanduser(path_str))
+
+    if len(path_str) == 1 and path_str == ".":
+        path_str = os.getcwd()
+    elif path_str.startswith("." + os.sep):
+        path_str = os.getcwd() + path_str[1:]
+    if path_str.endswith(os.sep):
+        path_str = path_str[: -len(os.sep)]
+
+    return pathlib.Path(path_str)
+
+
 class ResourceWriter(FHIRSpecWriter):
     def write(self):
-        """"""
+        """ """
         if self.settings.WRITE_RESOURCES:
             renderer = fhirrenderer.FHIRStructureDefinitionRenderer(
                 self.spec, self.settings
@@ -153,3 +174,44 @@ class ResourceWriter(FHIRSpecWriter):
         if self.settings.WRITE_UNITTESTS:
             renderer = fhirrenderer.FHIRUnitTestRenderer(self.spec, self.settings)
             renderer.render()
+
+
+class FhirPathExpressionParserWriter:
+    output_dir: pathlib.Path = None
+    grammar_path: pathlib.Path = None
+    antlr4_executable: str = "antlr4"
+    antlr4_version: str = None
+
+    def __init__(
+        self, output_dir=typing.Union[pathlib.Path, str], antlr4_version: str = "4.9.3"
+    ):
+        """ """
+        if isinstance(output_dir, str):
+            self.output_dir = parse_path(output_dir)
+        elif isinstance(output_dir, pathlib.Path):
+            self.output_dir = output_dir
+        self.grammar_path = (
+            pathlib.Path(os.path.abspath(__file__)).parent / "FHIRPathExpression.g4"
+        )
+        self.antlr4_version = antlr4_version
+
+    def write(self):
+        """ """
+        options = [
+            str(self.antlr4_executable),
+            "-v",
+            self.antlr4_version,
+            "-o",
+            str(self.output_dir),
+            "-Dlanguage=Python3",
+            str(self.grammar_path),
+        ]
+        sys.stdout.write(f"Start executing command '{options}'\n")
+        try:
+            check_call(options)
+            sys.stdout.write(f"Files are written at {self.output_dir}" + "\n")
+            return 0
+        except CalledProcessError as exc:
+            sys.stderr.write("Cannot write!\n")
+            sys.stderr.write(str(exc) + "\n")
+            return 1

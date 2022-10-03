@@ -230,11 +230,7 @@ FHIR_PRIMITIVES = [
 # If the path is None, no file will be copied but the
 # class names will still be recognized and it is assumed the class is present.
 MANUAL_PROFILES = [
-    (
-        "templates/fhirresourcemodel.py",
-        "fhirresourcemodel",
-        ["FHIRResourceModel"],
-    ),
+    ("templates/fhirresourcemodel.py", "fhirresourcemodel", ["FHIRResourceModel"],),
     ("templates/fhirabstractmodel.py", "fhirabstractmodel", ["FHIRAbstractModel"]),
     (
         "templates/fhirprimitiveextension.py",

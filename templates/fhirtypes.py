@@ -18,7 +18,8 @@ from pydantic.types import (
 )
 from pydantic.validators import bool_validator, parse_date, parse_datetime, parse_time
 
-from .fhirabstractmodel import FHIRAbstractModel
+from fhir.resources.core.fhirabstractmodel import FHIRAbstractModel
+
 from .fhirtypesvalidators import run_validator_for_fhir_type
 
 if TYPE_CHECKING:
@@ -108,13 +109,39 @@ class String(ConstrainedStr, Primitive):
     Therefore strings SHOULD always contain non-whitespace content"""
 
     regex = re.compile(r"[ \r\n\t\S]+")
+    allow_empty_str = False
     __visit_name__ = "string"
+
+    @classmethod
+    def configure_empty_str(cls, allow: bool = None):
+        """About empty string
+        1. https://bit.ly/3woGnFG
+        2. https://github.com/nazrulworld/fhir.resources/issues/65#issuecomment-856693256
+        There are a lot of valid discussion about accept empty string as String value but
+        it is cleared for us that according to FHIR Specification, empty string is not valid!
+        However in real use cases, we see empty string is coming other (when the task is related
+        to query data from other system)
+
+        It is in your hand now, if you would like to allow empty string! by default empty string is not
+        accepted.
+        """
+        if isinstance(allow, bool):
+            cls.allow_empty_str = allow
+
+    @classmethod
+    def validate(cls, value: Union[str]) -> Union[str]:
+        if cls.allow_empty_str is True and value in ("", ""):
+            return value
+        # do the default things
+        return ConstrainedStr.validate.__func__(cls, value)
 
     @classmethod
     def to_string(cls, value):
         """ """
         if isinstance(value, bytes):
             value = value.decode()
+        elif value is None:
+            value = ""
         assert isinstance(value, str)
         return value
 
@@ -357,7 +384,7 @@ class Url(AnyUrl, Primitive):
     Note URLs are accessed directly using the specified protocol.
     Common URL protocols are http{s}:, ftp:, mailto: and mllp:,
     though many others are defined"""
-
+    path_regex = re.compile(r'^/(?P<resourceType>[^\s?/]+)(/[^\s?/]+)*')
     __visit_name__ = "url"
 
     @classmethod
@@ -378,6 +405,13 @@ class Url(AnyUrl, Primitive):
             return value
         elif value in FHIR_PRIMITIVES:
             # Extensions may contain a valueUrl for a primitive FHIR type
+            return value
+
+        # we are allowing relative path
+        matched = cls.path_regex.match(value)
+        if matched is not None:
+            # @ToDo: required resource type validation?
+            # fx: resource type = matched.groupdict().get("resourceType")
             return value
 
         return AnyUrl.validate(value, field, config)

@@ -112,6 +112,7 @@ class FHIRStructureDefinitionRenderer(FHIRRenderer):
         """Copy base resources to the target location, according to settings."""
         for filepath, module, contains in self.settings.MANUAL_PROFILES:
             if not filepath:
+                logger.info(f"Manual profile {filepath} doesn't exists.")
                 continue
 
             if filepath.exists():
@@ -195,9 +196,10 @@ class FHIRStructureDefinitionRenderer(FHIRRenderer):
                     # special variable
                     prop.need_primitive_ext = False
                     if (
-                        klass.name in ("Resource", "Element")
+                        klass.name in ("Resource",)
                         and self.settings.CURRENT_RELEASE_NAME == "R4"
                         and prop.class_name == "String"
+                        and prop.name == "id"
                     ):
                         # we force Resource.id type = Id
                         prop.class_name = "Id"
@@ -219,7 +221,7 @@ class FHIRStructureDefinitionRenderer(FHIRRenderer):
                     elif (
                         prop_klass.class_type == FHIR_CLASS_TYPES.primitive_type
                         or prop.is_native
-                    ):
+                    ) and prop.name != "id":
                         prop.need_primitive_ext = True
 
                     if prop_klass.class_type != FHIR_CLASS_TYPES.other:

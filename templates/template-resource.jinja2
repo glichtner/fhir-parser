@@ -29,7 +29,7 @@ from . import fhirtypes
 {%- for klass in classes %}
 
 {% if klass.superclass in imports and klass.superclass.module not in imported -%}
-from . import {{ klass.superclass.module }}
+{% if klass.superclass.module == 'fhirabstractmodel' %}from fhir.resources.core import {{ klass.superclass.module }}{% else %}from . import {{ klass.superclass.module }}{% endif %}
 {% set _ = imported.update({klass.superclass.module: True}) %}
 {% endif -%}
 
@@ -52,7 +52,7 @@ class {{ klass.name }}({% if klass.superclass in imports %}{{ klass.superclass.m
 		{%- if prop.field_type_module %}{{ prop.field_type_module }}.{{ prop.field_type }}{% else %}{{ prop.field_type }}{% endif -%}
 	{%endset -%}
 	{%- set type_klass %}
-		{%- if prop.is_array %}typing.List[{{ type_klass_ }}]{% else %}{{ type_klass_ }}{% endif -%}
+		{%- if prop.is_array %}typing.List[{% if type_klass_.endswith('String')  %}typing.Optional[{{ type_klass_ }}]{% else %}{{ type_klass_ }}{% endif %}]{% else %}{{ type_klass_ }}{% endif -%}
 	{% endset %}
     {{ prop.name }}: {{ type_klass }} = Field(
 		{% if prop.nonoptional and not prop.one_of_many and not prop.need_primitive_ext %}...{% else %}None{% endif %},
@@ -90,7 +90,8 @@ class {{ klass.name }}({% if klass.superclass in imports %}{{ klass.superclass.m
 {%- endfor %}
     @classmethod
     def elements_sequence(cls):
-        """returning all elements names from ``{{ klass.name }}`` according specification,
+        """returning all elements names from
+        ``{{ klass.name }}`` according specification,
         with preserving original sequence order.
         """
         return {{ klass.expanded_properties_sequence|tojson }}
