@@ -28,10 +28,10 @@ _cache_path = "downloads"
 @click.option(
     "--fhir-release",
     "-r",
-    type=click.Choice(["STU3", "R4", "5.0.0-snapshot", "2022Sep"], case_sensitive=True),
+    type=click.Choice(["STU3", "R4", "5.0.0-snapshot", "2022Sep","5.0.0-snapshot3", "5.0.0-draft-final"], case_sensitive=True),
     help="FHIR Release",
     default=None,
-    required=False,
+    required=True,
 )
 @click.option("--dry-run", "-d", is_flag=True, default=False, help="Dry Run")
 @click.option(
